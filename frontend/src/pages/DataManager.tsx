@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Search, RefreshCw, Database, ChevronDown, ChevronUp, Filter, Grid3X3, List } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Edit, Trash2, Search, RefreshCw, Database, ChevronDown, ChevronUp, Filter, Grid3X3, List, Download, Upload, FileJson, FileSpreadsheet, X, Check } from 'lucide-react'
 import { Card } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
 import { Modal } from '@/components/common/Modal'
-import { projectApi, schemaApi, crudApi } from '@/services/api'
+import { projectApi, schemaApi, crudApi, exportApi, uploadApi } from '@/services/api'
 import type { Project, ResourceSchema } from '@/types'
+import { downloadBlob, formatFileSize, getFileExtension, getMimeTypeIcon, truncateString } from '@/utils/helpers'
 
 export function DataManager() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -19,6 +20,14 @@ export function DataManager() {
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 })
+  
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importResult, setImportResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -187,6 +196,136 @@ export function DataManager() {
     setPagination(prev => ({ ...prev, limit, page: 1 }))
   }
 
+  const handleExport = async (format: 'json' | 'csv') => {
+    if (!selectedProject || !selectedSchema) {
+      alert('请先选择项目和数据资源')
+      return
+    }
+    
+    setIsExporting(true)
+    setShowExportMenu(false)
+    
+    try {
+      const response = await exportApi.exportData(selectedProject, selectedSchema, format)
+      const blob = response.data as Blob
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `${selectedSchema}-${timestamp}.${format}`
+      
+      downloadBlob(blob, filename)
+    } catch (err: any) {
+      alert(`导出失败: ${err?.response?.data?.message || err.message}`)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleImportFile = async () => {
+    if (!importFile || !selectedProject || !selectedSchema) {
+      return
+    }
+    
+    setIsImporting(true)
+    setImportResult(null)
+    
+    try {
+      const fileContent = await importFile.text()
+      let importData: any[]
+      
+      if (importFile.name.endsWith('.json')) {
+        importData = JSON.parse(fileContent)
+        if (!Array.isArray(importData)) {
+          importData = [importData]
+        }
+      } else if (importFile.name.endsWith('.csv')) {
+        const lines = fileContent.split('\n').filter(line => line.trim())
+        if (lines.length < 2) {
+          throw new Error('CSV 文件至少需要包含表头和一行数据')
+        }
+        
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
+        importData = lines.slice(1).map(line => {
+          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+          const obj: any = {}
+          headers.forEach((header, i) => {
+            obj[header] = values[i] || ''
+          })
+          return obj
+        })
+      } else {
+        throw new Error('不支持的文件格式，请上传 JSON 或 CSV 文件')
+      }
+      
+      let successCount = 0
+      let failCount = 0
+      
+      for (const item of importData) {
+        try {
+          await crudApi.create(selectedProject, selectedSchema, item)
+          successCount++
+        } catch {
+          failCount++
+        }
+      }
+      
+      setImportResult({
+        success: failCount === 0,
+        message: `导入完成：成功 ${successCount} 条，失败 ${failCount} 条`,
+      })
+      
+      await fetchData()
+    } catch (err: any) {
+      setImportResult({
+        success: false,
+        message: `导入失败: ${err.message}`,
+      })
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImportFile(file)
+      setImportResult(null)
+    }
+  }
+
+  const handleImportClose = () => {
+    setShowImportModal(false)
+    setImportFile(null)
+    setImportResult(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const exportTemplate = () => {
+    if (!currentSchema) return
+    
+    const definition = parseDefinition(currentSchema.definition)
+    const fields = Array.isArray(definition) ? definition : (definition?.fields || [])
+    
+    if (fields.length === 0) {
+      alert('没有可用的字段')
+      return
+    }
+    
+    const headers = fields.map((f: any) => f.name)
+    const templateData = {
+      ...fields.reduce((acc: any, f: any) => {
+        acc[f.name] = f.example || `示例${f.label || f.name}`
+        return acc
+      }, {}),
+    }
+    
+    const content = JSON.stringify([templateData], null, 2)
+    const blob = new Blob([content], { type: 'application/json' })
+    const filename = `${currentSchema.name}-template.json`
+    downloadBlob(blob, filename)
+  }
+
   const renderField = (field: any, value: any) => {
     switch (field.type) {
       case 'boolean':
@@ -317,10 +456,48 @@ export function DataManager() {
           <h1 className="text-2xl font-bold text-text-primary">数据管理</h1>
           <p className="text-text-secondary mt-1">查看和管理项目中的具体数据</p>
         </div>
-        <Button onClick={() => handleOpenModal()} disabled={!selectedSchema}>
-          <Plus className="w-4 h-4 mr-2" />
-          添加数据
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Button 
+              variant="secondary" 
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={!selectedSchema || isExporting}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              导出
+            </Button>
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-2 w-40 bg-bg-card rounded-lg shadow-xl border border-border z-50 py-1">
+                <button
+                  onClick={() => handleExport('json')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+                >
+                  <FileJson className="w-4 h-4" />
+                  导出 JSON
+                </button>
+                <button
+                  onClick={() => handleExport('csv')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  导出 CSV
+                </button>
+              </div>
+            )}
+          </div>
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowImportModal(true)}
+            disabled={!selectedSchema}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            导入
+          </Button>
+          <Button onClick={() => handleOpenModal()} disabled={!selectedSchema}>
+            <Plus className="w-4 h-4 mr-2" />
+            添加数据
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -587,6 +764,80 @@ export function DataManager() {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={showImportModal}
+        onClose={handleImportClose}
+        title="导入数据"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-bg-hover rounded-lg border border-border">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-text-primary">上传文件</h4>
+              <button
+                onClick={exportTemplate}
+                className="text-sm text-primary hover:text-primary-hover transition-colors"
+              >
+                下载模板
+              </button>
+            </div>
+            <p className="text-sm text-text-secondary mb-3">
+              支持 JSON 和 CSV 格式的文件导入。点击下载模板了解数据格式要求。
+            </p>
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,.csv"
+                onChange={handleFileChange}
+                className="hidden"
+                id="file-input"
+              />
+              <label
+                htmlFor="file-input"
+                className="cursor-pointer flex flex-col items-center justify-center"
+              >
+                <Upload className="w-10 h-10 text-text-muted mb-3" />
+                {importFile ? (
+                  <div className="flex items-center gap-2 text-sm text-text-primary">
+                    <span className="text-lg">{getMimeTypeIcon(importFile.type)}</span>
+                    <span className="font-medium">{truncateString(importFile.name, 30)}</span>
+                    <span className="text-text-muted">({formatFileSize(importFile.size)})</span>
+                  </div>
+                ) : (
+                  <div className="text-sm text-text-muted">
+                    <p className="mb-1">点击选择文件或拖拽到此处</p>
+                    <p>支持 .json, .csv 格式</p>
+                  </div>
+                )}
+              </label>
+            </div>
+          </div>
+
+          {importResult && (
+            <div className={`p-3 rounded-lg flex items-center gap-2 ${
+              importResult.success 
+                ? 'bg-success/10 text-success border border-success/30' 
+                : 'bg-danger/10 text-danger border border-danger/30'
+            }`}>
+              {importResult.success ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              <span className="text-sm">{importResult.message}</span>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={handleImportClose}>取消</Button>
+            <Button 
+              onClick={handleImportFile} 
+              disabled={!importFile || isImporting}
+              loading={isImporting}
+            >
+              {isImporting ? '导入中...' : '开始导入'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   )
