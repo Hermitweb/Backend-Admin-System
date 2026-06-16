@@ -8,7 +8,7 @@
   基于 NestJS + React + TypeScript 的现代化后端管理系统，支持多项目管理、动态Schema、API自动生成、权限控制等核心功能。
 </p>
 
----
+***
 
 ## 📖 目录
 
@@ -19,7 +19,7 @@
 - [故障处理方法](#故障处理方法)
 - [项目开源声明](#项目开源声明)
 
----
+***
 
 ## 🏗️ 项目介绍
 
@@ -29,16 +29,16 @@ Backend Admin System 是一个专为现代 Web 应用设计的后端管理平台
 
 ### 核心特性
 
-| 特性 | 说明 |
-|------|------|
-| **多项目管理** | 支持创建多个独立项目，实现数据隔离和独立配置 |
-| **动态 Schema** | 可视化定义数据模型，自动生成数据库表结构 |
+| 特性            | 说明                                  |
+| ------------- | ----------------------------------- |
+| **多项目管理**     | 支持创建多个独立项目，实现数据隔离和独立配置              |
+| **动态 Schema** | 可视化定义数据模型，自动生成数据库表结构                |
 | **CRUD 自动生成** | 基于 Schema 自动生成 RESTful API，无需编写后端代码 |
-| **权限系统** | 支持系统级角色和项目级角色，细粒度权限控制 |
-| **API 文档** | 自动生成 OpenAPI 文档，支持 JSON/YAML 格式 |
-| **数据库管理** | 支持 SQLite、PostgreSQL、MySQL 等多种数据库 |
-| **审计日志** | 记录所有关键操作，支持操作追溯和安全审计 |
-| **系统设置** | 可视化管理系统配置，支持动态更新 |
+| **权限系统**      | 支持系统级角色和项目级角色，细粒度权限控制               |
+| **API 文档**    | 自动生成 OpenAPI 文档，支持 JSON/YAML 格式     |
+| **数据库管理**     | 支持 SQLite、PostgreSQL、MySQL 等多种数据库   |
+| **审计日志**      | 记录所有关键操作，支持操作追溯和安全审计                |
+| **系统设置**      | 可视化管理系统配置，支持动态更新                    |
 
 ### 适用场景
 
@@ -48,7 +48,7 @@ Backend Admin System 是一个专为现代 Web 应用设计的后端管理平台
 - 快速原型开发
 - API 服务网关
 
----
+***
 
 ## 🔧 技术文档
 
@@ -148,18 +148,18 @@ backend-admin/
 
 #### 核心实体
 
-| 实体 | 说明 |
-|------|------|
-| `User` | 用户信息，包含账号、密码、系统角色 |
-| `Project` | 项目信息，包含项目名称、Slug、描述 |
-| `ResourceSchema` | 数据模型定义，包含字段类型、验证规则 |
-| `DatabaseConnection` | 数据库连接配置 |
-| `AuditLog` | 审计日志，记录所有操作 |
-| `SystemSetting` | 系统设置，键值对配置 |
-| `LinkRule` | 联动规则，跨项目数据联动 |
-| `DocVersion` | API文档版本 |
-| `CustomEndpoint` | 自定义端点 |
-| `ProjectMember` | 项目成员关系 |
+| 实体                   | 说明                  |
+| -------------------- | ------------------- |
+| `User`               | 用户信息，包含账号、密码、系统角色   |
+| `Project`            | 项目信息，包含项目名称、Slug、描述 |
+| `ResourceSchema`     | 数据模型定义，包含字段类型、验证规则  |
+| `DatabaseConnection` | 数据库连接配置             |
+| `AuditLog`           | 审计日志，记录所有操作         |
+| `SystemSetting`      | 系统设置，键值对配置          |
+| `LinkRule`           | 联动规则，跨项目数据联动        |
+| `DocVersion`         | API文档版本             |
+| `CustomEndpoint`     | 自定义端点               |
+| `ProjectMember`      | 项目成员关系              |
 
 #### 实体关系
 
@@ -175,54 +175,54 @@ User ←→ ProjectMember ←→ Project
 
 #### 认证接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/v1/auth/login` | 用户登录 |
+| 方法   | 路径                      | 说明   |
+| ---- | ----------------------- | ---- |
+| POST | `/api/v1/auth/login`    | 用户登录 |
 | POST | `/api/v1/auth/register` | 用户注册 |
 
 #### 系统管理接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/v1/_system/projects` | 获取项目列表 |
-| POST | `/api/v1/_system/projects` | 创建项目 |
-| GET | `/api/v1/_system/users` | 获取用户列表 |
-| POST | `/api/v1/_system/users` | 创建用户 |
-| GET | `/api/v1/dashboard/stats` | 获取控制台统计 |
-| GET | `/api/v1/dashboard/system-status` | 获取系统状态 |
-| GET | `/api/v1/settings` | 获取系统设置 |
-| POST | `/api/v1/settings/batch` | 批量更新设置 |
+| 方法   | 路径                                | 说明      |
+| ---- | --------------------------------- | ------- |
+| GET  | `/api/v1/_system/projects`        | 获取项目列表  |
+| POST | `/api/v1/_system/projects`        | 创建项目    |
+| GET  | `/api/v1/_system/users`           | 获取用户列表  |
+| POST | `/api/v1/_system/users`           | 创建用户    |
+| GET  | `/api/v1/dashboard/stats`         | 获取控制台统计 |
+| GET  | `/api/v1/dashboard/system-status` | 获取系统状态  |
+| GET  | `/api/v1/settings`                | 获取系统设置  |
+| POST | `/api/v1/settings/batch`          | 批量更新设置  |
 
 #### 项目 API 接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/v1/:projectSlug/api/:resourceName` | 获取资源列表 |
-| POST | `/api/v1/:projectSlug/api/:resourceName` | 创建资源 |
-| GET | `/api/v1/:projectSlug/api/:resourceName/:id` | 获取单个资源 |
-| PUT | `/api/v1/:projectSlug/api/:resourceName/:id` | 更新资源 |
-| DELETE | `/api/v1/:projectSlug/api/:resourceName/:id` | 删除资源 |
-| GET | `/api/v1/:projectSlug/docs/openapi.json` | 获取 OpenAPI 文档 |
+| 方法     | 路径                                           | 说明            |
+| ------ | -------------------------------------------- | ------------- |
+| GET    | `/api/v1/:projectSlug/api/:resourceName`     | 获取资源列表        |
+| POST   | `/api/v1/:projectSlug/api/:resourceName`     | 创建资源          |
+| GET    | `/api/v1/:projectSlug/api/:resourceName/:id` | 获取单个资源        |
+| PUT    | `/api/v1/:projectSlug/api/:resourceName/:id` | 更新资源          |
+| DELETE | `/api/v1/:projectSlug/api/:resourceName/:id` | 删除资源          |
+| GET    | `/api/v1/:projectSlug/docs/openapi.json`     | 获取 OpenAPI 文档 |
 
 ### 权限模型
 
 #### 系统角色
 
-| 角色 | 权限 |
-|------|------|
+| 角色            | 权限           |
+| ------------- | ------------ |
 | `super_admin` | 超级管理员，拥有所有权限 |
-| `admin` | 管理员，管理用户和项目 |
-| `user` | 普通用户，基础访问权限 |
+| `admin`       | 管理员，管理用户和项目  |
+| `user`        | 普通用户，基础访问权限  |
 
 #### 项目角色
 
-| 角色 | 权限 |
-|------|------|
-| `admin` | 项目管理员，完整管理权限 |
-| `editor` | 编辑者，创建和编辑数据 |
-| `viewer` | 查看者，只读权限 |
+| 角色       | 权限           |
+| -------- | ------------ |
+| `admin`  | 项目管理员，完整管理权限 |
+| `editor` | 编辑者，创建和编辑数据  |
+| `viewer` | 查看者，只读权限     |
 
----
+***
 
 ## 🚀 使用手册
 
@@ -315,8 +315,8 @@ npm run dev
 
 #### 6. 访问系统
 
-- 前端界面: http://localhost:5173
-- 后端 API: http://localhost:3000
+- 前端界面: <http://localhost:5173>
+- 后端 API: <http://localhost:3000>
 - 默认账号: `admin@example.com`
 - 默认密码: `admin123`
 
@@ -413,7 +413,7 @@ npm run lint
 3. 设置系统角色
 4. 在项目中设置项目角色
 
----
+***
 
 ## 📦 部署流程
 
@@ -453,8 +453,8 @@ docker compose up -d --build
 
 #### 4. 访问服务
 
-- 前端: http://your-server-ip
-- 后端 API: http://your-server-ip/api/v1
+- 前端: <http://your-server-ip>
+- 后端 API: <http://your-server-ip/api/v1>
 
 ### Windows Server 部署
 
@@ -725,7 +725,7 @@ LOG_LEVEL=warn
 LOG_FILE=/var/log/backend-admin/app.log
 ```
 
----
+***
 
 ## 🔧 故障处理方法
 
@@ -996,32 +996,30 @@ node scripts/seed-data.js
    - 后端日志: `logs/app.log`
    - Nginx日志: `/var/log/nginx/error.log`
    - 系统日志: `journalctl -u backend-admin`
-
 2. 收集系统信息
    ```bash
    # 系统版本
    uname -a  # Linux
    systeminfo  # Windows
    sw_vers  # macOS
-   
+
    # 软件版本
    node --version
    npm --version
    nginx -v
-   
+
    # 资源使用
    free -h
    df -h
    top -bn1 | head -20
    ```
-
 3. 提交 Issue
    - 提供详细的错误描述
    - 包含日志片段
    - 说明复现步骤
    - 附上系统环境信息
 
----
+***
 
 ## 📄 项目开源声明
 
@@ -1057,27 +1055,27 @@ SOFTWARE.
 
 #### 后端依赖
 
-| 依赖 | 许可证 | 说明 |
-|------|--------|------|
-| [NestJS](https://nestjs.com/) | MIT | 渐进式 Node.js 框架 |
-| [TypeORM](https://typeorm.io/) | MIT | TypeScript ORM |
-| [Passport.js](http://www.passportjs.org/) | MIT | 认证中间件 |
-| [JWT](https://jwt.io/) | MIT | Token 认证 |
-| [SQLite3](https://www.sqlite.org/) | Public Domain | 嵌入式数据库 |
-| [PostgreSQL](https://www.postgresql.org/) | PostgreSQL License | 关系型数据库 |
-| [class-validator](https://github.com/typestack/class-validator) | MIT | 数据验证 |
+| 依赖                                                              | 许可证                | 说明             |
+| --------------------------------------------------------------- | ------------------ | -------------- |
+| [NestJS](https://nestjs.com/)                                   | MIT                | 渐进式 Node.js 框架 |
+| [TypeORM](https://typeorm.io/)                                  | MIT                | TypeScript ORM |
+| [Passport.js](http://www.passportjs.org/)                       | MIT                | 认证中间件          |
+| [JWT](https://jwt.io/)                                          | MIT                | Token 认证       |
+| [SQLite3](https://www.sqlite.org/)                              | Public Domain      | 嵌入式数据库         |
+| [PostgreSQL](https://www.postgresql.org/)                       | PostgreSQL License | 关系型数据库         |
+| [class-validator](https://github.com/typestack/class-validator) | MIT                | 数据验证           |
 
 #### 前端依赖
 
-| 依赖 | 许可证 | 说明 |
-|------|--------|------|
-| [React](https://react.dev/) | MIT | UI 框架 |
-| [Vite](https://vitejs.dev/) | MIT | 构建工具 |
-| [Tailwind CSS](https://tailwindcss.com/) | MIT | CSS 框架 |
-| [React Router](https://reactrouter.com/) | MIT | 路由库 |
-| [Zustand](https://github.com/pmndrs/zustand) | MIT | 状态管理 |
-| [Axios](https://axios-http.com/) | MIT | HTTP 客户端 |
-| [Lucide React](https://lucide.dev/) | ISC | 图标库 |
+| 依赖                                           | 许可证 | 说明       |
+| -------------------------------------------- | --- | -------- |
+| [React](https://react.dev/)                  | MIT | UI 框架    |
+| [Vite](https://vitejs.dev/)                  | MIT | 构建工具     |
+| [Tailwind CSS](https://tailwindcss.com/)     | MIT | CSS 框架   |
+| [React Router](https://reactrouter.com/)     | MIT | 路由库      |
+| [Zustand](https://github.com/pmndrs/zustand) | MIT | 状态管理     |
+| [Axios](https://axios-http.com/)             | MIT | HTTP 客户端 |
+| [Lucide React](https://lucide.dev/)          | ISC | 图标库      |
 
 ### 使用条款
 
@@ -1101,33 +1099,33 @@ SOFTWARE.
 
 本软件按"现状"提供，作者和贡献者不对任何直接或间接损失承担责任。
 
----
+***
 
 ## 📚 附录
 
 ### 默认配置
 
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| 端口 | 3000 | 后端服务端口 |
-| JWT 过期 | 3600s | Token 有效期 |
-| 数据库 | SQLite | 默认数据库类型 |
-| 日志级别 | info | 日志详细程度 |
-| 最大上传 | 10MB | 文件上传限制 |
+| 配置项    | 默认值    | 说明        |
+| ------ | ------ | --------- |
+| 端口     | 3000   | 后端服务端口    |
+| JWT 过期 | 3600s  | Token 有效期 |
+| 数据库    | SQLite | 默认数据库类型   |
+| 日志级别   | info   | 日志详细程度    |
+| 最大上传   | 10MB   | 文件上传限制    |
 
 ### 默认账号
 
-| 角色 | 邮箱 | 密码 |
-|------|------|------|
-| 超级管理员 | admin@example.com | admin123 |
+| 角色    | 邮箱                  | 密码       |
+| ----- | ------------------- | -------- |
+| 超级管理员 | <admin@example.com> | admin123 |
 
 ### 版本历史
 
-| 版本 | 日期 | 说明 |
-|------|------|------|
+| 版本     | 日期   | 说明     |
+| ------ | ---- | ------ |
 | v1.0.0 | 2024 | 初始版本发布 |
 
----
+***
 
 <p align="center">
   <strong>Made with ❤️ by Backend Admin System Team</strong>
