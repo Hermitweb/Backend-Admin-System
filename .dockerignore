@@ -1,0 +1,14 @@
+node_modules
+dist
+.env.production
+.env
+*.log
+data/*
+!data/.gitkeep
+databases/*
+!databases/.gitkeep
+logs/*
+!logs/.gitkeep
+*.sqlite
+deploy/certs/*
+!deploy/certs/.gitkeep

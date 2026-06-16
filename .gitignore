@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.env
+*.log
+data/*
+!data/.gitkeep
+databases/*
+!databases/.gitkeep
+logs/*
+!logs/.gitkeep
+*.sqlite
