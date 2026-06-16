@@ -159,4 +159,58 @@ export const settingsApi = {
   delete: (key: string) => api.delete<ApiResponse<null>>(`settings/${key}`),
 }
 
+export const uploadApi = {
+  upload: (file: File, category?: 'images' | 'documents') => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post<ApiResponse<{
+      id: string;
+      originalName: string;
+      storedName: string;
+      mimeType: string;
+      size: number;
+      path: string;
+      url: string;
+      uploadedAt: string;
+    }>>('uploads', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      params: { category },
+    })
+  },
+  uploadMultiple: (files: File[], category?: 'images' | 'documents') => {
+    const formData = new FormData()
+    files.forEach(file => formData.append('files', file))
+    return api.post<ApiResponse<{
+      uploaded: any[];
+      errors: string[];
+    }>>('uploads/multiple', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      params: { category },
+    })
+  },
+  delete: (path: string) => api.delete<ApiResponse<{ success: boolean }>>('uploads', { data: { path } }),
+  getConfig: () => api.get<ApiResponse<{ maxFileSize: number; allowedExtensions: string[] }>>('uploads/config'),
+}
+
+export const exportApi = {
+  exportData: (projectSlug: string, resourceName: string, format: 'json' | 'csv' = 'json', fields?: string) => {
+    return api.get(`export/data`, {
+      params: { project: projectSlug, resource: resourceName, format, fields },
+      responseType: 'blob',
+    })
+  },
+  exportCustom: (data: any, format: 'json' | 'csv' = 'json', fields?: string[], filename?: string) => {
+    return api.post('export/custom', { data, format, fields, filename }, {
+      responseType: 'blob',
+    })
+  },
+  getFormats: () => api.get<ApiResponse<{ formats: { value: string; label: string; description: string }[] }>>('export/formats'),
+}
+
+export const healthApi = {
+  check: () => api.get<ApiResponse<any>>('health'),
+  ready: () => api.get<ApiResponse<{ status: string }>>('health/ready'),
+  live: () => api.get<ApiResponse<{ status: string }>>('health/live'),
+}
+
 export default api
