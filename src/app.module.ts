@@ -14,6 +14,7 @@ import { DatabaseModule } from './database/database.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ProjectMemberModule } from './project-member/project-member.module';
 import { SettingsModule } from './settings/settings.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { SettingsModule } from './settings/settings.module';
     DashboardModule,
     ProjectMemberModule,
     SettingsModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { HttpExceptionFilter } from './common/filters/exception.filter';
 
 async function bootstrap() {
@@ -27,17 +28,21 @@ async function bootstrap() {
     errorHttpStatusCode: 422,
   }));
   
-  app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalInterceptors(new ResponseInterceptor(), new AuditLogInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
   
   const nodeEnv = configService.get('NODE_ENV') || 'development';
-  logger.log(`Starting Backend Admin System...`);
-  logger.log(`Environment: ${nodeEnv}`);
-  logger.log(`Port: ${port}`);
+  logger.log(`==================================================`);
+  logger.log(`  Backend Admin System`);
+  logger.log(`  Environment: ${nodeEnv}`);
+  logger.log(`  Port: ${port}`);
+  logger.log(`  CORS: ${configService.get('CORS_ORIGINS') || '*'}`);
+  logger.log(`==================================================`);
   
   await app.listen(port);
   logger.log(`Application is running on http://localhost:${port}`);
-  logger.log(`API Documentation: http://localhost:${port}/api`);
+  logger.log(`API Base Path: /api/v1`);
+  logger.log(`Health Check: http://localhost:${port}/api/v1/health`);
 }
 
 bootstrap();
