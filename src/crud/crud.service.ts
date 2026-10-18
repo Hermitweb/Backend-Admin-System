@@ -9,6 +9,39 @@ import { SchemaService } from '../schema/schema.service';
 import { DatabaseConnection } from '../entity/database-connection.entity';
 import { DynamicConnectionService } from '../database/dynamic-connection.service';
 import { AuditService } from '../audit/audit.service';
+import * as crypto from 'crypto';
+
+// 项目标识白名单验证 (仅允许字母、数字、连字符)
+const PROJECT_SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+// 资源名称白名单 (仅允许字母、数字、下划线)
+const RESOURCE_NAME_PATTERN = /^[a-z][a-z0-9_]*$/;
+
+/**
+ * 生成安全的表名字符串
+ */
+export function generateTableName(projectSlug: string, resourceName: string): string {
+  // 双重校验：先正则，再转小写并替换空格
+  const slug = projectSlug.toLowerCase().replace(/\s+/g, '_');
+  const resource = resourceName.toLowerCase();
+  
+  if (!PROJECT_SLUG_PATTERN.test(slug)) {
+    throw new Error(`Invalid project slug format: ${projectSlug}`);
+  }
+  
+  if (!RESOURCE_NAME_PATTERN.test(resource)) {
+    throw new Error(`Invalid resource name format: ${resourceName}`);
+  }
+  
+  return `project_${slug}_${resource}`;
+}
+
+/**
+ * 生成安全的版本表名字符串
+ */
+export function generateVersionTableName(projectSlug: string, resourceName: string): string {
+  return `${generateTableName(projectSlug, resourceName)}_versions`;
+}
 
 @Injectable()
 export class CrudService {
@@ -55,8 +88,8 @@ export class CrudService {
     const pageSize = parseInt(query.page_size) || 20;
     const skip = (page - 1) * pageSize;
 
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const tableName = `project_${sanitizedSlug}_${resourceName}`;
+    // 白名单校验后生成安全表名
+    const tableName = generateTableName(projectSlug, resourceName);
     
     const dataSource = await this.getDataSource(project.id);
     const qb = dataSource
@@ -65,16 +98,21 @@ export class CrudService {
       .from(tableName, resourceName);
 
     if (query.filter) {
-      this.applyFilters(qb, query.filter);
+      this.applyFilters(qb, query.filter, resourceName);
     }
 
     if (query.sort) {
-      this.applySorting(qb, query.sort);
+      this.applySorting(qb, query.sort, resourceName);
     }
 
     if (query.fields) {
       const fields = query.fields.split(',');
-      qb.select(fields.map(f => `${resourceName}.${f}`));
+      // 字段白名单校验
+      const safeFields = fields.filter(f => /^[a-z_]+$/.test(f));
+      if (safeFields.length !== fields.length) {
+        throw new Error('Invalid field names in query');
+      }
+      qb.select(safeFields.map(f => `${resourceName}.${f}`));
     }
 
     const data = await qb.skip(skip).take(pageSize).getRawMany();
@@ -85,7 +123,7 @@ export class CrudService {
       .from(tableName, resourceName);
 
     if (query.filter) {
-      this.applyFilters(countQb, query.filter);
+      this.applyFilters(countQb, query.filter, resourceName);
     }
 
     const countResult = await countQb.getRawOne();
@@ -100,33 +138,6 @@ export class CrudService {
         total_pages: Math.ceil(total / pageSize),
       },
     };
-  }
-
-  async get(projectSlug: string, resourceName: string, id: string): Promise<any> {
-    const project = await this.projectService.findBySlug(projectSlug);
-    const schema = await this.schemaRepository.findOne({
-      where: { project_id: project.id, name: resourceName },
-    });
-
-    if (!schema) {
-      throw new NotFoundException('Resource not found');
-    }
-
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const tableName = `project_${sanitizedSlug}_${resourceName}`;
-    const dataSource = await this.getDataSource(project.id);
-    const result = await dataSource
-      .createQueryBuilder()
-      .select('*')
-      .from(tableName, resourceName)
-      .where(`${resourceName}.id = :id`, { id })
-      .getRawOne();
-
-    if (!result) {
-      throw new NotFoundException('Record not found');
-    }
-
-    return result;
   }
 
   async create(projectSlug: string, resourceName: string, data: any, userId: string = ''): Promise<any> {
@@ -152,8 +163,7 @@ export class CrudService {
     }
     await this.schemaService.createTable(projectSlug, resourceName, definition);
 
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const tableName = `project_${sanitizedSlug}_${resourceName}`;
+    const tableName = generateTableName(projectSlug, resourceName);
     const dataSource = await this.getDataSource(project.id);
     const result = await dataSource
       .createQueryBuilder()
@@ -189,8 +199,7 @@ export class CrudService {
       { ...data, id },
     );
 
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const tableName = `project_${sanitizedSlug}_${resourceName}`;
+    const tableName = generateTableName(projectSlug, resourceName);
     const dataSource = await this.getDataSource(project.id);
     await dataSource
       .createQueryBuilder()
@@ -219,8 +228,7 @@ export class CrudService {
       throw new NotFoundException('Resource not found');
     }
 
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const tableName = `project_${sanitizedSlug}_${resourceName}`;
+    const tableName = generateTableName(projectSlug, resourceName);
     const dataSource = await this.getDataSource(project.id);
     const result = await dataSource
       .createQueryBuilder()
@@ -254,8 +262,7 @@ export class CrudService {
       throw new NotFoundException('Resource not found');
     }
 
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const tableName = `project_${sanitizedSlug}_${resourceName}`;
+    const tableName = generateTableName(projectSlug, resourceName);
     const dataSource = await this.getDataSource(project.id);
     const result = await dataSource
       .createQueryBuilder()
@@ -283,8 +290,7 @@ export class CrudService {
       throw new NotFoundException('Resource not found');
     }
 
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const tableName = `project_${sanitizedSlug}_${resourceName}`;
+    const tableName = generateTableName(projectSlug, resourceName);
     const dataSource = await this.getDataSource(project.id);
     
     if (mode === 'soft') {
@@ -316,11 +322,10 @@ export class CrudService {
       throw new NotFoundException('Resource not found');
     }
 
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const versionTableName = `project_${sanitizedSlug}_${resourceName}_versions`;
+    const versionTableName = generateVersionTableName(projectSlug, resourceName);
     
     const exists = await this.schemaRepository.manager.query(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name='project_${sanitizedSlug}_${resourceName}_versions'`,
+      `SELECT name FROM sqlite_master WHERE type='table' AND name='${versionTableName}'`,
     );
     
     if (!exists || exists.length === 0) {
@@ -353,8 +358,7 @@ export class CrudService {
       throw new NotFoundException('Resource not found');
     }
 
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const versionTableName = `project_${sanitizedSlug}_${resourceName}_versions`;
+    const versionTableName = generateVersionTableName(projectSlug, resourceName);
     
     const result = await this.schemaRepository.manager
       .createQueryBuilder()
@@ -386,9 +390,8 @@ export class CrudService {
       throw new NotFoundException('Resource not found');
     }
 
-    const sanitizedSlug = projectSlug.replace(/-/g, '_');
-    const versionTableName = `project_${sanitizedSlug}_${resourceName}_versions`;
-    const tableName = `project_${sanitizedSlug}_${resourceName}`;
+    const versionTableName = generateVersionTableName(projectSlug, resourceName);
+    const tableName = generateTableName(projectSlug, resourceName);
 
     const versionData = await this.schemaRepository.manager
       .createQueryBuilder()
@@ -419,7 +422,20 @@ export class CrudService {
     return this.get(projectSlug, resourceName, id);
   }
 
-  private applyFilters(qb: SelectQueryBuilder<any>, filters: string): void {
+  private applyFilters(qb: SelectQueryBuilder<any>, filters: string, resourceName?: string): void {
+    // 如果提供了 resourceName，验证字段属于该资源
+    if (resourceName) {
+      const filterArray = filters.split('&');
+      const validFields = /^[a-z_]+$/;
+      
+      for (const filter of filterArray) {
+        const [field] = filter.split(':');
+        if (!validFields.test(field)) {
+          throw new Error(`Invalid filter field: ${field}`);
+        }
+      }
+    }
+    
     const filterArray = filters.split('&');
     filterArray.forEach((filter) => {
       const [field, operator, value] = filter.split(':');
@@ -446,8 +462,20 @@ export class CrudService {
     });
   }
 
-  private applySorting(qb: SelectQueryBuilder<any>, sort: string): void {
+  private applySorting(qb: SelectQueryBuilder<any>, sort: string, resourceName?: string): void {
     const sortFields = sort.split(',');
+    
+    // 如果提供了 resourceName，验证字段格式
+    if (resourceName) {
+      const validFieldPattern = /^[a-z_]+$/;
+      for (const field of sortFields) {
+        const fieldName = field.startsWith('-') ? field.slice(1) : field;
+        if (!validFieldPattern.test(fieldName)) {
+          throw new Error(`Invalid sort field: ${fieldName}`);
+        }
+      }
+    }
+    
     sortFields.forEach((field) => {
       const direction = field.startsWith('-') ? 'DESC' : 'ASC';
       const fieldName = field.startsWith('-') ? field.slice(1) : field;

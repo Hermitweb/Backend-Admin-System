@@ -6,3 +6,4 @@ export { CustomEndpoint } from './custom-endpoint.entity';
 export { LinkRule } from './link-rule.entity';
 export { DocVersion } from './doc-version.entity';
 export { AuditLog } from './audit-log.entity';
+export { DeviceFingerprint } from './device-fingerprint.entity';

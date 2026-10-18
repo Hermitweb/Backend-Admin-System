@@ -1,14 +1,60 @@
-node_modules
-dist
-.env.production
+# 依赖目录
+node_modules/
+
+# 构建输出
+dist/
+out/
+build/
+
+# 测试覆盖
+coverage/
+.nyc_output/
+
+# IDE 和编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 日志和临时文件
+logs/
+npm-debug.log*
+
+# 环境变量（避免泄露敏感信息）
 .env
-*.log
-data/*
-!data/.gitkeep
-databases/*
-!databases/.gitkeep
-logs/*
-!logs/.gitkeep
-*.sqlite
-deploy/certs/*
-!deploy/certs/.gitkeep
+.env.local
+.env.*.local
+
+# 证书和密钥
+*.pem
+*.key
+certificate.pem
+private.key
+
+# 文档
+*.md
+docs/
+README.md
+
+# TypeScript 相关
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Jest
+jest.config.json
+coverage/
+
+# Node 相关缓存
+.node_reboot_complete
+.npm
+.pnpm-store
+
+# 系统文件
+.DS_Store
+Thumbs.db

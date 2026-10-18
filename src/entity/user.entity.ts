@@ -26,6 +26,12 @@ export class User {
   @Column({ type: 'varchar', length: 32, default: 'user' })
   role: UserRole;
 
+  @Column({ type: 'text', nullable: true })
+  refreshToken?: string;
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  deviceFingerprint?: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

@@ -1,0 +1,71 @@
+# NSSM (Non-Sucking Service Manager) Configuration Template
+# ==========================================
+# Installation Command:
+# nssm install "BackendAdminSystem" "path\to\service-wrapper.ps1"
+
+# ==========================================
+# Basic Settings
+# ==========================================
+Application: backend-admin-system
+Path: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+Arguments: -ExecutionPolicy Bypass -File "C:\backend-admin\service-wrapper.ps1"
+
+# ==========================================
+# Startup Parameters
+# ==========================================
+StartupType: Automatic
+AppDirectory: C:\backend-admin
+StartArguments: start /min powershell -ExecutionPolicy Bypass -File service-wrapper.ps1
+
+# ==========================================
+# Logging Configuration
+# ==========================================
+Log Path: C:\backend-admin\logs
+Log Error: C:\backend-admin\logs\error.log
+Log Output: C:\backend-admin\logs\output.log
+
+# ==========================================
+# Process Priority
+# ==========================================
+Priority: NORMAL_PRIORITY_CLASS
+
+# ==========================================
+# Recovery Actions
+# ==========================================
+Crash Recover: Restart Service
+Failure Action: Restart Service (after 5 minutes, retry 3 times)
+Last Success: Keep Running
+
+# ==========================================
+# Environment Variables
+# ==========================================
+Set Environment Variable: NODE_ENV=production
+Set Environment Variable: PORT=3000
+Set Environment Variable: LOG_LEVEL=info
+
+# ==========================================
+# Resource Limits
+# ==========================================
+Minimum Heap Size: 268435456
+Maximum Heap Size: 536870912
+CPU Affinity: ALL
+
+# ==========================================
+# User Account
+# ==========================================
+Log On: Local System Account
+Allow Service to Interact with Desktop: No
+
+# ==========================================
+# Dependencies
+# ==========================================
+Dependency: Postgres
+Dependency: Redis
+
+# ==========================================
+# Additional Notes
+# ==========================================
+Description: Backend Admin System Service
+Display Name: Backend Admin System Service
+Error Control: Normal
+

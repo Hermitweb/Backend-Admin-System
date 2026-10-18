@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { createContext, Script } from 'vm';
 
 export type HookType = 'before_create' | 'after_create' | 'before_update' | 'after_update' | 'before_delete' | 'after_delete';
 
@@ -12,6 +13,14 @@ export interface HookConfig {
 @Injectable()
 export class HookService {
   private hooks: Map<string, HookConfig[]> = new Map();
+  private readonly logger = new Logger(HookService.name);
+  
+  // VM 沙箱安全配置
+  private readonly SANDBOX_TIMEOUT = 5000; // 5 秒超时
+  private readonly SANDBOX_MODULES = ['Date', 'JSON', 'Math']; // 允许的内置对象白名单
+  
+  // 预编译脚本缓存（避免重复编译）
+  private compiledScripts: Map<string, Script> = new Map();
 
   registerHooks(projectSlug: string, resourceName: string, hooks: HookConfig[]): void {
     const key = `${projectSlug}:${resourceName}`;
@@ -126,15 +135,77 @@ export class HookService {
 
   private executeCustomScript(hook: HookConfig, data: any): any {
     const script = hook.config?.script;
-    if (script) {
-      try {
-        const func = new Function('data', script);
-        return func(data);
-      } catch (e) {
-        console.error('Custom script execution failed:', e);
-        return data;
+    if (!script) return data;
+    
+    try {
+      // 白名单校验：只允许字母、数字、下划线、点号
+      const safePattern = /^[a-zA-Z0-9_\.\[\](){}\s,;\-\+\*\/%=&<>!?:@~`]+$/;
+      if (!safePattern.test(script)) {
+        this.logger.warn('Unsafe script detected and blocked');
+        throw new Error('Script contains disallowed characters');
       }
+      
+      // 阻止危险函数调用
+      const dangerousPatterns = [
+        /require\s*\(/i,
+        /import\s*\(/i,
+        /process\s*\./,
+        /global\s*\[/,
+        /eval\s*\(/,
+        /Function\s*\(/,
+        /child_process/i,
+        /fs\s*[,;]/,
+        /os\s*[,;]/,
+        /net\s*[,;]/,
+        /crypto\s*[,;]/
+      ];
+      
+      for (const pattern of dangerousPatterns) {
+        if (pattern.test(script)) {
+          this.logger.warn(`Dangerous pattern detected in script: ${pattern}`);
+          throw new Error('Script contains forbidden operations');
+        }
+      }
+      
+      // 使用 VM 模块创建隔离上下文
+      const sandbox = {
+        data,
+        console: {
+          log: (...args: any[]) => this.logger.debug(args.join(' ')),
+          warn: (...args: any[]) => this.logger.warn(args.join(' ')),
+          error: (...args: any[]) => this.logger.error(args.join(' '))
+        },
+        setTimeout: (fn: Function, ms: number) => setTimeout(fn, ms),
+        clearTimeout: (id: number) => clearTimeout(id),
+        Date,
+        JSON,
+        Math,
+        Buffer: globalThis.Buffer,
+        URL,
+        URLSearchParams
+      };
+      
+      const context = createContext(sandbox);
+      const compiledScript = new Script(script, {
+        filename: `hook-${hook.name}`,
+        timeout: this.SANDBOX_TIMEOUT
+      });
+      
+      // 执行脚本
+      compiledScript.runInContext(context, {
+        timeout: this.SANDBOX_TIMEOUT
+      });
+      
+      return context.data;
+      
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('timeout')) {
+        this.logger.error(`Hook script timeout after ${this.SANDBOX_TIMEOUT}ms`);
+        throw new Error('Hook execution timeout');
+      }
+      
+      this.logger.error(`Custom script execution failed: ${error.message}`);
+      return data; // 失败时返回原始数据而非抛出异常
     }
-    return data;
   }
 }

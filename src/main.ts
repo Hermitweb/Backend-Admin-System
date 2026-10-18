@@ -13,12 +13,14 @@ async function bootstrap() {
   
   const logger = new Logger('Bootstrap');
   
+  // Enable CORS with credentials for HttpOnly cookie support
   app.enableCors({
     origin: configService.get('CORS_ORIGINS') ? configService.get('CORS_ORIGINS').split(',') : '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Device-Fingerprint'],
+    credentials: true, // Required for HttpOnly cookies to work across domains
     maxAge: 3600,
+    exposedHeaders: ['X-Request-ID'],
   });
   
   app.useGlobalPipes(new ValidationPipe({
@@ -37,6 +39,7 @@ async function bootstrap() {
   logger.log(`  Environment: ${nodeEnv}`);
   logger.log(`  Port: ${port}`);
   logger.log(`  CORS: ${configService.get('CORS_ORIGINS') || '*'}`);
+  logger.log(`  Credentials: true (for HttpOnly cookies)`);
   logger.log(`==================================================`);
   
   await app.listen(port);

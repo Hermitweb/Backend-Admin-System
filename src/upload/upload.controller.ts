@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Query, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Query, UseInterceptors, UploadedFile, ValidationPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService, UploadedFile as UploadFileInfo } from './upload.service';
 
@@ -9,53 +9,51 @@ export class UploadController {
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
-    @UploadedFile()
-    file: any,
-    @Query('category') category?: 'images' | 'documents',
+    @UploadedFile() file: any,
+    @Query('category') category?: 'images' | 'documents' | 'svgs',
   ) {
-    const uploaded = await this.uploadService.uploadFile(
-      file.buffer,
-      file.originalname,
-      file.mimetype,
-      category || 'images',
-    );
+    try {
+      const uploaded = await this.uploadService.uploadFile(
+        file.buffer,
+        file.originalname,
+        file.mimetype,
+        category || 'images',
+      );
 
-    return {
-      code: 0,
-      message: 'success',
-      data: uploaded,
-    };
+      return {
+        code: 0,
+        message: 'Upload successful',
+        data: uploaded,
+      };
+    } catch (error: any) {
+      return {
+        code: 1,
+        message: error.message || 'Upload failed',
+        data: null,
+      };
+    }
   }
 
   @Post('multiple')
   @UseInterceptors(FileInterceptor('files'))
   async uploadMultipleFiles(
     @UploadedFile() files: any[],
-    @Query('category') category?: 'images' | 'documents',
+    @Query('category') category?: 'images' | 'documents' | 'svgs',
   ) {
-    const uploadedFiles: UploadFileInfo[] = [];
-    const errors: string[] = [];
+    const fileObjects = files.map(f => ({
+      buffer: f.buffer,
+      originalname: f.originalname,
+      mimetype: f.mimetype,
+    }));
 
-    for (const file of files) {
-      try {
-        const uploaded = await this.uploadService.uploadFile(
-          file.buffer,
-          file.originalname,
-          file.mimetype,
-          category || 'images',
-        );
-        uploadedFiles.push(uploaded);
-      } catch (error: any) {
-        errors.push(`${file.originalname}: ${error.message}`);
-      }
-    }
+    const result = await this.uploadService.uploadMultipleFiles(fileObjects, category || 'images');
 
     return {
-      code: errors.length > 0 ? 1 : 0,
-      message: errors.length > 0 ? '部分文件上传失败' : 'success',
+      code: result.errors.length > 0 ? 1 : 0,
+      message: result.errors.length > 0 ? '部分文件上传失败' : 'success',
       data: {
-        uploaded: uploadedFiles,
-        errors,
+        uploaded: result.uploaded,
+        errors: result.errors,
       },
     };
   }
@@ -85,10 +83,7 @@ export class UploadController {
     return {
       code: 0,
       message: 'success',
-      data: {
-        maxFileSize: this.uploadService.getMaxFileSize(),
-        allowedExtensions: this.uploadService.getAllowedExtensions(),
-      },
+      data: this.uploadService.getUploadConfig(),
     };
   }
 }
